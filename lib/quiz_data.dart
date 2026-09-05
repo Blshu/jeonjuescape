@@ -1,0 +1,83 @@
+class StageInfo {
+  final int id;
+  final String title;
+  final String location;
+  final String story;
+  final String question;
+  final List<String> options;
+  final int answerIndex; // 0부터 시작
+  final String digit;    // 비밀번호 숫자
+
+  StageInfo({
+    required this.id,
+    required this.title,
+    required this.location,
+    required this.story,
+    required this.question,
+    required this.options,
+    required this.answerIndex,
+    required this.digit,
+  });
+}
+
+final List<StageInfo> stages = [
+  // 1번 스테이지: 칠엽수
+  StageInfo(
+    id: 1,
+    title: "가시 껍질의 비밀",
+    location: "칠엽수 숲길",
+    story: "바닥에 떨어진 날카로운 가시 열매 사이에서 첫 번째 쪽지를 주웠다.\n'밤과 닮았지만 독이 있는 열매... 이 나무의 손바닥 모양 잎은 몇 장일까?'",
+    question: "칠엽수(七葉樹)의 한 가지에 뭉쳐나는 잎의 개수는?",
+    options: ["3장", "5장", "7장", "9장"],
+    answerIndex: 2,
+    digit: "7",
+  ),
+
+  // 2번 스테이지: 거만한 삼나무 (상혁이 오리지널 스토리!)
+  StageInfo(
+    id: 2,
+    title: "거만한 삼나무 나뭇가지",
+    location: "삼나무 숲",
+    story: "비밀번호의 2번째 자리를 찾기 위해 하염없이 뛰다 거대한 삼나무를 발견했다.\n그런데 떨어진 나뭇가지가 스르륵 움직이더니 말을 걸었다.\n\"여기서 가장 필요하고 좋은 나무는 바로 나야! 내 퀴즈를 맞추면 원래는 안 알려주지만 2번째 자리를 알려주지.\" 잘난 척하는 게 어이가 없었다.",
+    question: "포도송이를 닮아 '포도히아신스'라는 별명을 가진 봄꽃 식물은?",
+    options: ["1. 무스카리", "2. 수선화", "3. 홍매화"],
+    answerIndex: 0,
+    digit: "1",
+  ),
+
+  // 3번 스테이지: 홍매화
+  StageInfo(
+    id: 3,
+    title: "도발의 쪽지",
+    location: "홍매화 동산",
+    story: "붉은 매화나무 가지에 꽂힌 얄미운 쪽지:\n\"이 문제를 풀면 세 번째 비번을 주지. 하지만 넌 못 풀걸?\"",
+    question: "홍매화와 같은 장미과(Prunus)에 속하는 형제 나무는 무엇일까요?",
+    options: ["1. 복숭아나무", "2. 소나무", "3. 대나무"],
+    answerIndex: 0,
+    digit: "1",
+  ),
+
+  // 4번 스테이지: 낙우송 연못
+  StageInfo(
+    id: 4,
+    title: "솟아오른 기근",
+    location: "낙우송 연못",
+    story: "연못가를 따라 뛰어가는데 땅 위로 툭툭 솟아난 기묘한 나무뿌리들이 발을 붙잡았다. 팻말에 문제가 삐뚤빼뚤 적혀 있다.",
+    question: "기도하는 스님을 닮은 낙우송의 돌출된 숨뿌리(기근)를 부르는 별명은?",
+    options: ["1. 개구쟁이", "2. 꼬마 요정", "3. 꼬마 스님"],
+    answerIndex: 2,
+    digit: "3",
+  ),
+
+  // 5번 스테이지: 유리온실 (AR 관찰)
+  StageInfo(
+    id: 5,
+    title: "각성의 진원지",
+    location: "유리온실 (AR 관찰)",
+    story: "네팔의 파동이 직격한 곳! 열대 식물들이 붉게 폭주하고 있다. AR 카메라로 식물의 3D 코어를 회전시켜 숨겨진 마지막 정화 번호를 읽어내야 한다.",
+    question: "AR 3D 식물 코어에 새겨진 마지막 정화 숫자는?",
+    options: ["1", "3", "5", "9"],
+    answerIndex: 2,
+    digit: "5",
+  ),
+];
