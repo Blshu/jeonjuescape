@@ -7,6 +7,10 @@ class StageInfo {
   final List<String> options;
   final int answerIndex; // 0부터 시작
   final String digit;    // 비밀번호 숫자
+  final double latitude;
+  final double longitude;
+  final double discoveryRadius;
+  final String? nextLocationClue;
 
   StageInfo({
     required this.id,
@@ -17,6 +21,10 @@ class StageInfo {
     required this.options,
     required this.answerIndex,
     required this.digit,
+    required this.latitude,
+    required this.longitude,
+    this.discoveryRadius = 80,
+    this.nextLocationClue,
   });
 }
 
@@ -31,6 +39,9 @@ final List<StageInfo> stages = [
     options: ["3장", "5장", "7장", "9장"],
     answerIndex: 2,
     digit: "7",
+    latitude: 35.85150,
+    longitude: 127.08850,
+    nextLocationClue: "다음 쪽지는 곧게 뻗은 나무들이 빽빽한 숲길에 있습니다. 포도송이를 닮은 봄꽃을 찾아보세요.",
   ),
 
   // 2번 스테이지: 거만한 삼나무 (상혁이 오리지널 스토리!)
@@ -43,6 +54,9 @@ final List<StageInfo> stages = [
     options: ["1. 무스카리", "2. 수선화", "3. 홍매화"],
     answerIndex: 0,
     digit: "1",
+    latitude: 35.85185,
+    longitude: 127.08880,
+    nextLocationClue: "붉은 꽃잎이 봄바람에 흔들리는 동산으로 가세요. 가지 사이에 다음 쪽지가 숨어 있습니다.",
   ),
 
   // 3번 스테이지: 홍매화
@@ -55,6 +69,9 @@ final List<StageInfo> stages = [
     options: ["1. 복숭아나무", "2. 소나무", "3. 대나무"],
     answerIndex: 0,
     digit: "1",
+    latitude: 35.85115,
+    longitude: 127.08895,
+    nextLocationClue: "연못가에서 물을 향해 솟아오른 이상한 나무뿌리를 찾으세요. 작은 스님이 길을 알려줄 것입니다.",
   ),
 
   // 4번 스테이지: 낙우송 연못
@@ -67,6 +84,9 @@ final List<StageInfo> stages = [
     options: ["1. 개구쟁이", "2. 꼬마 요정", "3. 꼬마 스님"],
     answerIndex: 2,
     digit: "3",
+    latitude: 35.85180,
+    longitude: 127.08815,
+    nextLocationClue: "마지막 단서는 따뜻하고 투명한 집 안에 있습니다. 붉게 빛나는 열대 식물을 찾아 유리온실로 가세요.",
   ),
 
   // 5번 스테이지: 유리온실 (AR 관찰)
@@ -79,5 +99,8 @@ final List<StageInfo> stages = [
     options: ["1", "3", "5", "9"],
     answerIndex: 2,
     digit: "5",
+    latitude: 35.85135,
+    longitude: 127.08925,
+    nextLocationClue: null,
   ),
 ];

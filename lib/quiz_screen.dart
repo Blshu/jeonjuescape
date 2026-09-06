@@ -5,8 +5,9 @@ import 'quiz_data.dart';
 class QuizScreen extends StatefulWidget {
   final StageInfo stage;
   final Function(String digit) onSolved;
+  final bool arActivated;
 
-  const QuizScreen({Key? key, required this.stage, required this.onSolved})
+  const QuizScreen({Key? key, required this.stage, required this.onSolved, this.arActivated = false})
       : super(key: key);
 
   @override
@@ -28,8 +29,7 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 5번 구역(유리온실)인 경우 AR 3D 모델 뷰어 띄우기
-            if (widget.stage.id == 5)
+            if (widget.arActivated && widget.stage.id == 5)
               Container(
                 height: 250,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -135,9 +135,28 @@ class _QuizScreenState extends State<QuizScreen> {
                               backgroundColor: Colors.grey[900],
                               title: const Text("🎯 단서 해독 성공!",
                                   style: TextStyle(color: Colors.greenAccent)),
-                              content: Text(
-                                "정답입니다!\n획득한 탈출 암호 숫자: [ ${widget.stage.digit} ]",
-                                style: const TextStyle(fontSize: 16),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "정답입니다!\n획득한 탈출 암호 숫자: [ ${widget.stage.digit} ]",
+                                    style: const TextStyle(fontSize: 16, height: 1.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    widget.stage.nextLocationClue == null
+                                        ? "모든 장소의 단서를 찾았습니다. 이제 최종 암호를 확인하세요!"
+                                        : "다음 장소 단서\n${widget.stage.nextLocationClue}",
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      height: 1.5,
+                                      color: Colors.orangeAccent,
+                                    ),
+                                  ),
+                                ],
                               ),
                               actions: [
                                 TextButton(

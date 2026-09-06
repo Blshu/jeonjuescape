@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'quiz_data.dart';
 import 'quiz_screen.dart';
+import 'exploration_screen.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -23,6 +24,11 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
   final List<String> targetPin = ["7", "1", "1", "3", "5"];
   // 플레이어가 해금한 숫자 저장 리스트
   List<String?> unlockedDigits = [null, null, null, null, null];
+  final Set<int> discoveredStageIds = <int>{};
+
+  void _onClueDiscovered(StageInfo stage) {
+    setState(() => discoveredStageIds.add(stage.id));
+  }
 
   void _onStageCleared(int stageIndex, String digit) {
     setState(() {
@@ -33,6 +39,19 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
     if (!unlockedDigits.contains(null)) {
       Future.delayed(Duration(milliseconds: 300), () => _showEndingDialog());
     }
+  }
+
+  void _openExploration() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExplorationScreen(
+          discoveredStageIds: discoveredStageIds,
+          onClueDiscovered: _onClueDiscovered,
+          onStageSolved: (stage) => _onStageCleared(stage.id - 1, stage.digit),
+        ),
+      ),
+    ).then((_) => setState(() {}));
   }
 
   void _showEndingDialog() {
@@ -147,6 +166,23 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
             ),
           ),
 
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _openExploration,
+                icon: Icon(Icons.explore),
+                label: Text("수목원 탐색 시작 · AR 단서 찾기"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ),
+
           // 수목원 탐색 구역 리스트
           Expanded(
             child: ListView.builder(
@@ -155,6 +191,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
               itemBuilder: (context, index) {
                 final stage = stages[index];
                 final isCleared = unlockedDigits[index] != null;
+                final isDiscovered = discoveredStageIds.contains(stage.id);
 
                 return Card(
                   margin: EdgeInsets.only(bottom: 12),
@@ -168,7 +205,11 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                   child: ListTile(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: CircleAvatar(
-                      backgroundColor: isCleared ? Colors.green : Colors.grey[700],
+                        backgroundColor: isCleared
+                          ? Colors.green
+                          : isDiscovered
+                            ? Colors.orange[800]
+                            : Colors.grey[700],
                       child: isCleared
                           ? Icon(Icons.check, color: Colors.white)
                           : Text("${stage.id}", style: TextStyle(color: Colors.white)),
@@ -181,13 +222,22 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                       stage.title,
                       style: TextStyle(color: Colors.grey[400], fontSize: 13),
                     ),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    trailing: Icon(
+                      isDiscovered ? Icons.lock_open : Icons.lock_outline,
+                      size: 18,
+                      color: isDiscovered ? Colors.greenAccent : Colors.grey,
+                    ),
                     onTap: () {
+                      if (!isDiscovered) {
+                        _openExploration();
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => QuizScreen(
                             stage: stage,
+                            arActivated: true,
                             onSolved: (digit) => _onStageCleared(index, digit),
                           ),
                         ),
