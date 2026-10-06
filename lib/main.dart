@@ -4,19 +4,23 @@ import 'quiz_screen.dart';
 import 'exploration_screen.dart';
 
 void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData.dark().copyWith(
-      scaffoldBackgroundColor: const Color(0xFF121814),
-      primaryColor: Colors.greenAccent,
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF121814),
+        primaryColor: Colors.greenAccent,
+      ),
+      home: const ArboretumMainScreen(),
     ),
-    home: ArboretumMainScreen(),
-  ));
+  );
 }
 
 class ArboretumMainScreen extends StatefulWidget {
+  const ArboretumMainScreen({super.key});
+
   @override
-  _ArboretumMainScreenState createState() => _ArboretumMainScreenState();
+  State<ArboretumMainScreen> createState() => _ArboretumMainScreenState();
 }
 
 class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
@@ -60,7 +64,10 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: Text("🚨 비상 정화 시스템 가동 성공!", style: TextStyle(color: Colors.greenAccent)),
+        title: Text(
+          "🚨 비상 정화 시스템 가동 성공!",
+          style: TextStyle(color: Colors.greenAccent),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,8 +82,13 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
               Divider(color: Colors.grey[700]),
               SizedBox(height: 8),
               Center(
-                child: Text("🏆 PROJECT CREDITS 🏆",
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                child: Text(
+                  "🏆 PROJECT CREDITS 🏆",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                  ),
+                ),
               ),
               SizedBox(height: 12),
               Center(
@@ -84,7 +96,11 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                   "총괄 기획 · Flutter 앱 개발 · AR 연동 · 시나리오\n"
                   "👑 이 상 혁 👑",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               SizedBox(height: 14),
@@ -101,7 +117,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text("탈출 완료", style: TextStyle(color: Colors.greenAccent)),
-          )
+          ),
         ],
       ),
     );
@@ -143,9 +159,13 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                       width: 48,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: digit != null ? Colors.green[900] : Colors.black45,
+                        color: digit != null
+                            ? Colors.green[900]
+                            : Colors.black45,
                         border: Border.all(
-                          color: digit != null ? Colors.greenAccent : Colors.grey[700]!,
+                          color: digit != null
+                              ? Colors.greenAccent
+                              : Colors.grey[700]!,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(10),
@@ -156,7 +176,9 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: digit != null ? Colors.white : Colors.grey[600],
+                          color: digit != null
+                              ? Colors.white
+                              : Colors.grey[600],
                         ),
                       ),
                     );
@@ -199,24 +221,35 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: isCleared ? Colors.greenAccent : Colors.transparent,
+                      color: isCleared
+                          ? Colors.greenAccent
+                          : Colors.transparent,
                     ),
                   ),
                   child: ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     leading: CircleAvatar(
-                        backgroundColor: isCleared
+                      backgroundColor: isCleared
                           ? Colors.green
                           : isDiscovered
-                            ? Colors.orange[800]
-                            : Colors.grey[700],
+                          ? Colors.orange[800]
+                          : Colors.grey[700],
                       child: isCleared
                           ? Icon(Icons.check, color: Colors.white)
-                          : Text("${stage.id}", style: TextStyle(color: Colors.white)),
+                          : Text(
+                              "${stage.id}",
+                              style: TextStyle(color: Colors.white),
+                            ),
                     ),
                     title: Text(
                       stage.location,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     subtitle: Text(
                       stage.title,

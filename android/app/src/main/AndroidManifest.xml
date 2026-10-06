@@ -1,13 +1,23 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- ARCore 미지원 기기에서도 설치 후 명확한 안내를 표시한다. -->
+    <uses-feature
+        android:name="android.hardware.camera.ar"
+        android:required="false"
+        tools:replace="android:required"/>
 
     <application
         android:label="jeonju_escape"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data
+            android:name="com.google.ar.core"
+            android:value="optional"
+            tools:replace="android:value"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

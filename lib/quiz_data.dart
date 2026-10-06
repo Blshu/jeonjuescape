@@ -1,3 +1,11 @@
+enum ArCluePlacementMode {
+  /// 테스트용: AR 세션이 준비되면 사용자 전방 가까운 곳에 자동 배치합니다.
+  randomNearby,
+
+  /// 사용자가 인식된 평면을 눌렀을 때 배치합니다.
+  tappedPlane,
+}
+
 class StageInfo {
   final int id;
   final String title;
@@ -6,11 +14,14 @@ class StageInfo {
   final String question;
   final List<String> options;
   final int answerIndex; // 0부터 시작
-  final String digit;    // 비밀번호 숫자
+  final String digit; // 비밀번호 숫자
   final double latitude;
   final double longitude;
   final double discoveryRadius;
   final String? nextLocationClue;
+  final String arModelAsset;
+  final double arModelScale;
+  final ArCluePlacementMode arPlacementMode;
 
   StageInfo({
     required this.id,
@@ -25,7 +36,11 @@ class StageInfo {
     required this.longitude,
     this.discoveryRadius = 80,
     this.nextLocationClue,
-  });
+    this.arModelAsset = 'assets/models/clue.glb',
+    this.arModelScale = 0.2,
+    this.arPlacementMode = ArCluePlacementMode.randomNearby,
+  }) : assert(arModelAsset.endsWith('.glb'), 'AR 모델은 GLB 파일이어야 합니다.'),
+       assert(arModelScale > 0, 'AR 모델 배율은 0보다 커야 합니다.');
 }
 
 final List<StageInfo> stages = [
@@ -34,7 +49,8 @@ final List<StageInfo> stages = [
     id: 1,
     title: "가시 껍질의 비밀",
     location: "칠엽수 숲길",
-    story: "바닥에 떨어진 날카로운 가시 열매 사이에서 첫 번째 쪽지를 주웠다.\n'밤과 닮았지만 독이 있는 열매... 이 나무의 손바닥 모양 잎은 몇 장일까?'",
+    story:
+        "바닥에 떨어진 날카로운 가시 열매 사이에서 첫 번째 쪽지를 주웠다.\n'밤과 닮았지만 독이 있는 열매... 이 나무의 손바닥 모양 잎은 몇 장일까?'",
     question: "칠엽수(七葉樹)의 한 가지에 뭉쳐나는 잎의 개수는?",
     options: ["3장", "5장", "7장", "9장"],
     answerIndex: 2,
@@ -49,7 +65,8 @@ final List<StageInfo> stages = [
     id: 2,
     title: "거만한 삼나무 나뭇가지",
     location: "삼나무 숲",
-    story: "비밀번호의 2번째 자리를 찾기 위해 하염없이 뛰다 거대한 삼나무를 발견했다.\n그런데 떨어진 나뭇가지가 스르륵 움직이더니 말을 걸었다.\n\"여기서 가장 필요하고 좋은 나무는 바로 나야! 내 퀴즈를 맞추면 원래는 안 알려주지만 2번째 자리를 알려주지.\" 잘난 척하는 게 어이가 없었다.",
+    story:
+        "비밀번호의 2번째 자리를 찾기 위해 하염없이 뛰다 거대한 삼나무를 발견했다.\n그런데 떨어진 나뭇가지가 스르륵 움직이더니 말을 걸었다.\n\"여기서 가장 필요하고 좋은 나무는 바로 나야! 내 퀴즈를 맞추면 원래는 안 알려주지만 2번째 자리를 알려주지.\" 잘난 척하는 게 어이가 없었다.",
     question: "포도송이를 닮아 '포도히아신스'라는 별명을 가진 봄꽃 식물은?",
     options: ["1. 무스카리", "2. 수선화", "3. 홍매화"],
     answerIndex: 0,
@@ -94,7 +111,8 @@ final List<StageInfo> stages = [
     id: 5,
     title: "각성의 진원지",
     location: "유리온실 (AR 관찰)",
-    story: "네팔의 파동이 직격한 곳! 열대 식물들이 붉게 폭주하고 있다. AR 카메라로 식물의 3D 코어를 회전시켜 숨겨진 마지막 정화 번호를 읽어내야 한다.",
+    story:
+        "네팔의 파동이 직격한 곳! 열대 식물들이 붉게 폭주하고 있다. AR 카메라로 식물의 3D 코어를 회전시켜 숨겨진 마지막 정화 번호를 읽어내야 한다.",
     question: "AR 3D 식물 코어에 새겨진 마지막 정화 숫자는?",
     options: ["1", "3", "5", "9"],
     answerIndex: 2,

@@ -7,11 +7,15 @@ class QuizScreen extends StatefulWidget {
   final Function(String digit) onSolved;
   final bool arActivated;
 
-  const QuizScreen({Key? key, required this.stage, required this.onSolved, this.arActivated = false})
-      : super(key: key);
+  const QuizScreen({
+    super.key,
+    required this.stage,
+    required this.onSolved,
+    this.arActivated = false,
+  });
 
   @override
-  _QuizScreenState createState() => _QuizScreenState();
+  State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
@@ -40,7 +44,8 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: const ModelViewer(
-                    src: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb', // 테스트용 3D 샘플
+                    src:
+                        'https://modelviewer.dev/shared-assets/models/Astronaut.glb', // 테스트용 3D 샘플
                     alt: "AR 식물 코어 모델",
                     ar: true,
                     autoRotate: true,
@@ -71,7 +76,11 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               child: Text(
                 widget.stage.story,
-                style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.white70),
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: Colors.white70,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -99,7 +108,9 @@ class _QuizScreenState extends State<QuizScreen> {
                   title: Text(
                     widget.stage.options[idx],
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   onTap: () {
@@ -133,15 +144,20 @@ class _QuizScreenState extends State<QuizScreen> {
                             barrierDismissible: false,
                             builder: (_) => AlertDialog(
                               backgroundColor: Colors.grey[900],
-                              title: const Text("🎯 단서 해독 성공!",
-                                  style: TextStyle(color: Colors.greenAccent)),
+                              title: const Text(
+                                "🎯 단서 해독 성공!",
+                                style: TextStyle(color: Colors.greenAccent),
+                              ),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "정답입니다!\n획득한 탈출 암호 숫자: [ ${widget.stage.digit} ]",
-                                    style: const TextStyle(fontSize: 16, height: 1.5),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      height: 1.5,
+                                    ),
                                   ),
                                   const SizedBox(height: 16),
                                   const Divider(),
@@ -164,9 +180,11 @@ class _QuizScreenState extends State<QuizScreen> {
                                     Navigator.pop(context); // 팝업 닫기
                                     Navigator.pop(context); // 메인 화면으로 복귀
                                   },
-                                  child: const Text("확인",
-                                      style: TextStyle(color: Colors.greenAccent)),
-                                )
+                                  child: const Text(
+                                    "확인",
+                                    style: TextStyle(color: Colors.greenAccent),
+                                  ),
+                                ),
                               ],
                             ),
                           );
