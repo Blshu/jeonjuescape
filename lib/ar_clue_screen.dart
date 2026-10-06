@@ -34,6 +34,7 @@ class _ArClueScreenState extends State<ArClueScreen> {
   ARAnchorManager? _arAnchorManager;
   ARPlaneAnchor? _clueAnchor;
   ARNode? _clueNode;
+  vector.Vector3? _clueWorldPosition;
   final math.Random _random = math.Random();
 
   Key _arViewKey = UniqueKey();
@@ -132,17 +133,30 @@ class _ArClueScreenState extends State<ArClueScreen> {
     ARObjectManager objectManager,
   ) async {
     try {
-      await sessionManager.onInitialize(
+      final initialization = sessionManager.onInitialize(
         showAnimatedGuide: !_usesRandomNearbyPlacement,
         autoHideCoachingOverlay: true,
         showFeaturePoints: false,
         showPlanes: !_usesRandomNearbyPlacement,
         showWorldOrigin: false,
-        handleTaps: !_usesRandomNearbyPlacement,
+        // 평면 배치뿐 아니라 실제 3D 쪽지를 누르는 동작에도 필요합니다.
+        handleTaps: true,
         handlePans: false,
         handleRotation: false,
         lightIntensityMultiplier: 1.2,
       );
+
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // ar_flutter_plugin_plus 1.1.3의 iOS 구현은 ARKit 세션을 시작한 뒤
+        // MethodChannel 완료 결과를 반환하지 않는다. 네이티브 초기화 자체는
+        // 동기적으로 끝나므로 짧은 제한 시간 후 다음 단계로 진행한다.
+        await initialization.timeout(
+          const Duration(milliseconds: 800),
+          onTimeout: () {},
+        );
+      } else {
+        await initialization;
+      }
       objectManager.onInitialize(iosScaleFactor: 1, androidScaleFactor: 1);
 
       if (!mounted || sessionManager != _arSessionManager) return;
@@ -178,7 +192,10 @@ class _ArClueScreenState extends State<ArClueScreen> {
 
     // ARKit/ARCore가 첫 카메라 자세를 제공할 때까지 잠시 기다립니다.
     // 평면 앵커를 거치지 않아 iOS에서도 바닥 터치 없이 배치할 수 있습니다.
-    for (var retry = 0; retry < 20; retry++) {
+    final maxPoseRetries = defaultTargetPlatform == TargetPlatform.iOS
+        ? 40
+        : 20;
+    for (var retry = 0; retry < maxPoseRetries; retry++) {
       if (!mounted ||
           attempt != _placementAttempt ||
           sessionManager != _arSessionManager ||
@@ -194,15 +211,9 @@ class _ArClueScreenState extends State<ArClueScreen> {
 
       ARNode? node;
       try {
-        final angle = (_random.nextDouble() - 0.5) * (math.pi / 3);
-        final distance = 1.1 + (_random.nextDouble() * 0.7);
-        final verticalOffset = -(0.3 + (_random.nextDouble() * 0.25));
-        final localOffset = vector.Matrix4.translationValues(
-          math.sin(angle) * distance,
-          verticalOffset,
-          -math.cos(angle) * distance,
+        final (worldTransform, worldPosition) = _randomClueTransform(
+          cameraPose,
         );
-        final worldTransform = cameraPose * localOffset;
 
         node = ARNode(
           type: NodeType.localGLB,
@@ -221,9 +232,10 @@ class _ArClueScreenState extends State<ArClueScreen> {
         }
         setState(() {
           _clueNode = node;
+          _clueWorldPosition = worldPosition;
           _isPlacing = false;
           _modelPlaced = true;
-          _statusMessage = '앞쪽 가까운 곳에 나타난 3D 쪽지를 찾아보세요.';
+          _statusMessage = '주변을 천천히 한 바퀴 둘러보고, 3D 쪽지를 화면에서 직접 눌러 주세요.';
         });
         return;
       } catch (_) {
@@ -240,8 +252,49 @@ class _ArClueScreenState extends State<ArClueScreen> {
     if (!mounted || attempt != _placementAttempt) return;
     setState(() {
       _isPlacing = false;
-      _statusMessage = 'AR 위치를 확인하지 못했습니다. 휴대폰을 천천히 움직인 뒤 다시 시도해 주세요.';
+      _statusMessage = defaultTargetPlatform == TargetPlatform.iOS
+          ? 'ARKit 카메라 위치를 확인하지 못했습니다. 카메라 권한을 확인해 주세요. '
+                'LiveContainer에서는 LiveContainer의 카메라 권한이 필요합니다.'
+          : 'AR 위치를 확인하지 못했습니다. 휴대폰을 천천히 움직인 뒤 다시 시도해 주세요.';
     });
+  }
+
+  (vector.Matrix4, vector.Vector3) _randomClueTransform(
+    vector.Matrix4 cameraPose,
+  ) {
+    final cameraPosition = cameraPose.getTranslation();
+    var forward = vector.Vector3(
+      -cameraPose.entry(0, 2),
+      0,
+      -cameraPose.entry(2, 2),
+    );
+    if (forward.length2 < 0.0001) {
+      forward = vector.Vector3(0, 0, -1);
+    } else {
+      forward.normalize();
+    }
+    final right = vector.Vector3(-forward.z, 0, forward.x);
+
+    // 처음 바라보는 정면 120도 범위는 제외해 반드시 주변을 탐색하게 합니다.
+    final angle = (math.pi / 3) + (_random.nextDouble() * 4 * math.pi / 3);
+    final distance = 1.3 + (_random.nextDouble() * 0.9);
+    final horizontalOffset =
+        (forward * (math.cos(angle) * distance)) +
+        (right * (math.sin(angle) * distance));
+    final worldPosition = vector.Vector3(
+      cameraPosition.x + horizontalOffset.x,
+      cameraPosition.y - (0.4 + (_random.nextDouble() * 0.25)),
+      cameraPosition.z + horizontalOffset.z,
+    );
+
+    final directionToUser = cameraPosition - worldPosition;
+    directionToUser.y = 0;
+    final yaw = math.atan2(directionToUser.x, directionToUser.z);
+    final rotation = vector.Quaternion.axisAngle(vector.Vector3(0, 1, 0), yaw);
+    return (
+      vector.Matrix4.compose(worldPosition, rotation, vector.Vector3.all(1)),
+      worldPosition,
+    );
   }
 
   String _messageForArError(Object error) {
@@ -299,7 +352,11 @@ class _ArClueScreenState extends State<ArClueScreen> {
   Future<void> _onPlaneOrPointTapped(
     List<ARHitTestResult> hitTestResults,
   ) async {
-    if (_usesRandomNearbyPlacement || !_arReady || _isPlacing || _modelPlaced) {
+    if (_usesRandomNearbyPlacement) {
+      await _tryDiscoverRandomClueFromTap(hitTestResults);
+      return;
+    }
+    if (!_arReady || _isPlacing || _modelPlaced) {
       return;
     }
 
@@ -329,7 +386,8 @@ class _ArClueScreenState extends State<ArClueScreen> {
       _statusMessage = 'AR 쪽지를 불러오는 중입니다...';
     });
 
-    final anchor = ARPlaneAnchor(transformation: planeHit.worldTransform);
+    final planeWorldTransform = planeHit.worldTransform;
+    final anchor = ARPlaneAnchor(transformation: planeWorldTransform);
     ARNode? node;
     try {
       final anchorAdded = await anchorManager.addAnchor(anchor) ?? false;
@@ -355,9 +413,10 @@ class _ArClueScreenState extends State<ArClueScreen> {
       setState(() {
         _clueAnchor = anchor;
         _clueNode = node;
+        _clueWorldPosition = planeWorldTransform.getTranslation();
         _isPlacing = false;
         _modelPlaced = true;
-        _statusMessage = '공간에 나타난 3D 쪽지를 확인한 뒤 발견 버튼을 눌러 주세요.';
+        _statusMessage = '공간에 나타난 3D 쪽지를 화면에서 직접 눌러 주세요.';
       });
     } catch (_) {
       if (node != null) objectManager.removeNode(node);
@@ -370,6 +429,40 @@ class _ArClueScreenState extends State<ArClueScreen> {
     }
   }
 
+  Future<void> _tryDiscoverRandomClueFromTap(
+    List<ARHitTestResult> hitTestResults,
+  ) async {
+    if (!_modelPlaced || _clueFound || hitTestResults.isEmpty) return;
+
+    final sessionManager = _arSessionManager;
+    final cluePosition = _clueWorldPosition;
+    if (sessionManager == null || cluePosition == null) return;
+
+    final cameraPose = await sessionManager.getCameraPose();
+    if (!mounted || cameraPose == null || _clueFound) return;
+    final cameraPosition = cameraPose.getTranslation();
+    final clueDirection = cluePosition - cameraPosition;
+    if (clueDirection.length2 < 0.0001) return;
+    clueDirection.normalize();
+
+    // Android 플러그인은 노드 탭 이벤트를 주지 않으므로, 탭한 AR 레이와
+    // 쪽지 방향이 충분히 가까운지 확인해 동일한 발견 동작을 제공합니다.
+    final minimumAlignment = math.cos(12 * math.pi / 180);
+    for (final hit in hitTestResults) {
+      final tapDirection = hit.worldTransform.getTranslation() - cameraPosition;
+      if (tapDirection.length2 < 0.0001) continue;
+      tapDirection.normalize();
+      if (clueDirection.dot(tapDirection) >= minimumAlignment) {
+        _markClueFound();
+        return;
+      }
+    }
+
+    setState(() {
+      _statusMessage = '쪽지 모형을 화면 안에 맞춘 뒤 모형을 정확히 눌러 주세요.';
+    });
+  }
+
   void _onNodeTapped(List<String> nodeNames) {
     final clueNode = _clueNode;
     if (clueNode != null && nodeNames.contains(clueNode.name)) {
@@ -379,6 +472,7 @@ class _ArClueScreenState extends State<ArClueScreen> {
 
   void _markClueFound() {
     if (!mounted || !_modelPlaced || _clueFound) return;
+    unawaited(HapticFeedback.mediumImpact());
     setState(() {
       _clueFound = true;
       _statusMessage = 'AR 쪽지를 발견했습니다. 이제 문제를 열 수 있습니다.';
@@ -401,6 +495,7 @@ class _ArClueScreenState extends State<ArClueScreen> {
     setState(() {
       _clueNode = null;
       _clueAnchor = null;
+      _clueWorldPosition = null;
       _modelPlaced = false;
       _clueFound = false;
       _isPlacing = false;
@@ -427,6 +522,7 @@ class _ArClueScreenState extends State<ArClueScreen> {
       _arAnchorManager = null;
       _clueAnchor = null;
       _clueNode = null;
+      _clueWorldPosition = null;
       _arReady = false;
       _isPlacing = false;
       _modelPlaced = false;
@@ -572,13 +668,13 @@ class _ArClueScreenState extends State<ArClueScreen> {
                         : null
                   : _clueFound
                   ? () => Navigator.pop(context, true)
-                  : _markClueFound,
+                  : null,
               icon: Icon(
                 !_modelPlaced
                     ? Icons.refresh
                     : _clueFound
                     ? Icons.note_alt_outlined
-                    : Icons.touch_app,
+                    : Icons.search,
               ),
               label: Text(
                 !_modelPlaced
@@ -589,7 +685,7 @@ class _ArClueScreenState extends State<ArClueScreen> {
                           : '평면을 눌러 AR 쪽지를 배치하세요'
                     : _clueFound
                     ? '발견한 쪽지 열기'
-                    : '이 AR 쪽지를 발견했습니다',
+                    : '3D 쪽지를 화면에서 직접 눌러 발견하세요',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.greenAccent,
