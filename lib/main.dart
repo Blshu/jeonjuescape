@@ -83,7 +83,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
               SizedBox(height: 8),
               Center(
                 child: Text(
-                  "🏆 PROJECT CREDITS 🏆",
+                  "🍀 식물지식인 제작",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.greenAccent,
@@ -93,21 +93,15 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
               SizedBox(height: 12),
               Center(
                 child: Text(
-                  "총괄 기획 · Flutter 앱 개발 · AR 연동 · 시나리오\n"
-                  "👑 이 상 혁 👑",
+                  "앱 개발 / AR 연동 / 시나리오 - 이상혁\n"
+                  "문제 아이디어 제공 및 문제 제작 - 원지호, 권도하, 김윤조\n"
+                  "총괄 기획 - 선생님",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.7,
+                    color: Colors.white70,
                   ),
-                ),
-              ),
-              SizedBox(height: 14),
-              Center(
-                child: Text(
-                  "문제 아이디어 제공: 원지호, 권도하, 김윤조",
-                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                 ),
               ),
             ],
