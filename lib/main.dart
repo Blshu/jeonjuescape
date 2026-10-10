@@ -104,6 +104,27 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                   ),
                 ),
               ),
+              Center(
+                child: Text(
+                  "출처",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                  ),
+                ),
+              ),
+              // 세상에서 가장 중요한 출처
+              Center(
+                child: Text(
+                  "Scroll by Jakob Hippe [CC-BY] via Poly Pizza",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.7,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
