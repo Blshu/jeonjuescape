@@ -11,12 +11,14 @@ class ExplorationScreen extends StatefulWidget {
   final Set<int> discoveredStageIds;
   final ValueChanged<StageInfo> onClueDiscovered;
   final ValueChanged<StageInfo> onStageSolved;
+  final StageInfo? initialStage;
 
   const ExplorationScreen({
     super.key,
     required this.discoveredStageIds,
     required this.onClueDiscovered,
     required this.onStageSolved,
+    this.initialStage,
   });
 
   @override
@@ -28,12 +30,19 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
   Position? _currentPosition;
   String _locationStatus = '위치 권한을 확인하는 중...';
   bool _isLoadingLocation = true;
+  bool _isStageFlowActive = false;
   final Set<int> _arOpenedStageIds = <int>{};
 
   @override
   void initState() {
     super.initState();
     _startLocationTracking();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialStage = widget.initialStage;
+      if (initialStage != null) {
+        _beginStageFlow(initialStage);
+      }
+    });
   }
 
   @override
@@ -93,9 +102,19 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         stage.longitude,
       );
       if (distance <= stage.discoveryRadius) {
-        _activateAr(stage);
+        _beginStageFlow(stage);
         break;
       }
+    }
+  }
+
+  Future<void> _beginStageFlow(StageInfo stage) async {
+    if (!mounted || _isStageFlowActive) return;
+    _isStageFlowActive = true;
+    try {
+      await _openStageOrAr(stage);
+    } finally {
+      _isStageFlowActive = false;
     }
   }
 
@@ -123,21 +142,43 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
         backgroundColor: Colors.green[800],
       ),
     );
-    _openStage(stage);
+    await _openStage(stage);
   }
 
-  void _openStage(StageInfo stage) {
+  Future<void> _openStageOrAr(StageInfo stage) async {
+    if (widget.discoveredStageIds.contains(stage.id)) {
+      await _openStage(stage);
+    } else {
+      await _activateAr(stage);
+    }
+  }
+
+  Future<void> _openStage(StageInfo stage) async {
     if (!widget.discoveredStageIds.contains(stage.id)) return;
-    Navigator.push(
+    final solved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => QuizScreen(
-              stage: stage,
-              arActivated: true,
-              onSolved: (_) => widget.onStageSolved(stage),
+          stage: stage,
+          arActivated: true,
+          onSolved: (_) => widget.onStageSolved(stage),
         ),
       ),
     );
+    if (!mounted || solved != true) return;
+
+    final stageIndex = stages.indexWhere(
+      (candidate) => candidate.id == stage.id,
+    );
+    final isLastStage = stageIndex < 0 || stageIndex == stages.length - 1;
+    if (isLastStage) {
+      Navigator.pop(context, true);
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (!mounted) return;
+    await _openStageOrAr(stages[stageIndex + 1]);
   }
 
   @override
@@ -172,7 +213,7 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
     final positionText = _currentPosition == null
         ? ''
         : '\n${_currentPosition!.latitude.toStringAsFixed(5)}, '
-            '${_currentPosition!.longitude.toStringAsFixed(5)}';
+              '${_currentPosition!.longitude.toStringAsFixed(5)}';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -183,11 +224,22 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
       child: Row(
         children: [
           _isLoadingLocation
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator())
-              : const Icon(Icons.my_location, color: Colors.greenAccent, size: 26),
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(),
+                )
+              : const Icon(
+                  Icons.my_location,
+                  color: Colors.greenAccent,
+                  size: 26,
+                ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('$_locationStatus$positionText', style: const TextStyle(height: 1.4)),
+            child: Text(
+              '$_locationStatus$positionText',
+              style: const TextStyle(height: 1.4),
+            ),
           ),
         ],
       ),
@@ -206,18 +258,20 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
           child: Icon(isDiscovered ? Icons.visibility : Icons.lock_outline),
         ),
         title: Text(stage.location),
-        subtitle: Text(isDiscovered ? 'AR 단서 활성화 · 문제를 풀 수 있습니다' : '구역에 들어가면 쪽지가 나타납니다'),
+        subtitle: Text(
+          isDiscovered ? 'AR 단서 활성화 · 문제를 풀 수 있습니다' : '구역에 들어가면 쪽지가 나타납니다',
+        ),
         trailing: isDiscovered
             ? IconButton(
                 tooltip: '문제 열기',
                 icon: const Icon(Icons.arrow_forward_ios),
-                onPressed: () => _openStage(stage),
+                onPressed: () => _beginStageFlow(stage),
               )
             : TextButton(
-                onPressed: () => _activateAr(stage),
+                onPressed: () => _beginStageFlow(stage),
                 child: const Text('AR 체험'),
               ),
-        onTap: isDiscovered ? () => _openStage(stage) : null,
+        onTap: isDiscovered ? () => _beginStageFlow(stage) : null,
       ),
     );
   }

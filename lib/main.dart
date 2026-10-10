@@ -131,7 +131,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("탈출 완료", style: TextStyle(color: Colors.greenAccent)),
+            child: Text("탈출 성공", style: TextStyle(color: Colors.greenAccent)),
           ),
         ],
       ),

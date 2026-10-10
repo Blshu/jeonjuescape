@@ -138,11 +138,10 @@ class _QuizScreenState extends State<QuizScreen> {
                     ? null
                     : () {
                         if (selectedIndex == widget.stage.answerIndex) {
-                          widget.onSolved(widget.stage.digit);
                           showDialog(
                             context: context,
                             barrierDismissible: false,
-                            builder: (_) => AlertDialog(
+                            builder: (dialogContext) => AlertDialog(
                               backgroundColor: Colors.grey[900],
                               title: const Text(
                                 "🎯 단서 해독 성공!",
@@ -177,12 +176,17 @@ class _QuizScreenState extends State<QuizScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context); // 팝업 닫기
-                                    Navigator.pop(context); // 메인 화면으로 복귀
+                                    widget.onSolved(widget.stage.digit);
+                                    Navigator.pop(dialogContext);
+                                    Navigator.pop(context, true);
                                   },
-                                  child: const Text(
-                                    "확인",
-                                    style: TextStyle(color: Colors.greenAccent),
+                                  child: Text(
+                                    widget.stage.nextLocationClue == null
+                                        ? "탈출 결과 보기"
+                                        : "다음 스테이지",
+                                    style: const TextStyle(
+                                      color: Colors.greenAccent,
+                                    ),
                                   ),
                                 ),
                               ],
