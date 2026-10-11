@@ -23,6 +23,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nextLocationClue = nextLocationClueFor(widget.stage);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.stage.location),
@@ -33,7 +34,7 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.arActivated && widget.stage.id == 5)
+            if (widget.arActivated && widget.stage.showsPlantCore)
               Container(
                 height: 250,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -162,9 +163,9 @@ class _QuizScreenState extends State<QuizScreen> {
                                   const Divider(),
                                   const SizedBox(height: 8),
                                   Text(
-                                    widget.stage.nextLocationClue == null
+                                    nextLocationClue == null
                                         ? "모든 장소의 단서를 찾았습니다. 이제 최종 암호를 확인하세요!"
-                                        : "다음 장소 단서\n${widget.stage.nextLocationClue}",
+                                        : "다음 장소 단서\n$nextLocationClue",
                                     style: const TextStyle(
                                       fontSize: 15,
                                       height: 1.5,
@@ -181,7 +182,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                     Navigator.pop(context, true);
                                   },
                                   child: Text(
-                                    widget.stage.nextLocationClue == null
+                                    nextLocationClue == null
                                         ? "탈출 결과 보기"
                                         : "다음 스테이지",
                                     style: const TextStyle(

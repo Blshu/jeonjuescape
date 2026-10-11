@@ -25,18 +25,22 @@ class ExplorationScreen extends StatefulWidget {
   State<ExplorationScreen> createState() => _ExplorationScreenState();
 }
 
-class _ExplorationScreenState extends State<ExplorationScreen> {
+class _ExplorationScreenState extends State<ExplorationScreen>
+    with WidgetsBindingObserver {
   StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<ServiceStatus>? _serviceStatusSubscription;
   Position? _currentPosition;
   String _locationStatus = '위치 권한을 확인하는 중...';
   bool _isLoadingLocation = true;
+  int _locationAttempt = 0;
   bool _isStageFlowActive = false;
   final Set<int> _arOpenedStageIds = <int>{};
 
   @override
   void initState() {
     super.initState();
-    _startLocationTracking();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_initializeLocationTracking());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final initialStage = widget.initialStage;
       if (initialStage != null) {
@@ -47,42 +51,206 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _locationAttempt++;
     _positionSubscription?.cancel();
+    _serviceStatusSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _startLocationTracking() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _setLocationStatus('위치 서비스를 켜면 현장 구역을 자동으로 발견합니다.');
-      return;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _listenForLocationServiceChanges();
+      unawaited(_startLocationTracking(requestPermission: false));
     }
-
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      _setLocationStatus('위치 권한이 없어 체험 모드로 진행합니다.');
-      return;
-    }
-
-    final position = await Geolocator.getCurrentPosition();
-    _updatePosition(position);
-    _positionSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen(_updatePosition);
   }
 
-  void _setLocationStatus(String status) {
+  Future<void> _initializeLocationTracking() async {
+    await _startLocationTracking();
+    if (!mounted) return;
+    _listenForLocationServiceChanges();
+  }
+
+  void _listenForLocationServiceChanges() {
+    if (_serviceStatusSubscription != null) return;
+    try {
+      _serviceStatusSubscription = Geolocator.getServiceStatusStream().listen(
+        (status) => unawaited(_handleLocationServiceStatus(status)),
+        onError: (Object error) {
+          final subscription = _serviceStatusSubscription;
+          _serviceStatusSubscription = null;
+          if (subscription != null) {
+            unawaited(subscription.cancel());
+          }
+          _handleLocationError(
+            error,
+            fallbackMessage: '위치 서비스 상태를 확인하지 못했습니다. 새로고침 버튼으로 다시 시도해 주세요.',
+          );
+        },
+        onDone: () {
+          _serviceStatusSubscription = null;
+          _setLocationStatus(
+            '위치 서비스 상태 감시가 중단됐습니다. 새로고침 버튼으로 다시 연결해 주세요.',
+            clearPosition: true,
+          );
+        },
+      );
+    } catch (error) {
+      _handleLocationError(
+        error,
+        fallbackMessage: '위치 서비스 상태 감시를 시작하지 못했습니다. 새로고침 버튼으로 다시 시도해 주세요.',
+      );
+    }
+  }
+
+  Future<void> _handleLocationServiceStatus(ServiceStatus status) async {
+    if (!mounted) return;
+    if (status == ServiceStatus.disabled) {
+      _locationAttempt++;
+      await _stopPositionTracking();
+      _setLocationStatus(
+        '위치 서비스가 꺼졌습니다. 기기 설정에서 GPS를 켜면 자동으로 다시 연결합니다.',
+        clearPosition: true,
+      );
+      return;
+    }
+    await _startLocationTracking(requestPermission: false);
+  }
+
+  Future<void> _startLocationTracking({bool requestPermission = true}) async {
+    final attempt = ++_locationAttempt;
+    _setLocationStatus(
+      '현재 위치를 확인하는 중...',
+      isLoading: true,
+      clearPosition: true,
+    );
+    await _stopPositionTracking();
+    if (!mounted || attempt != _locationAttempt) return;
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!mounted || attempt != _locationAttempt) return;
+      if (!serviceEnabled) {
+        _setLocationStatus(
+          '위치 서비스가 꺼져 있습니다. 기기 설정에서 GPS를 켜면 현장 구역을 다시 탐색합니다.',
+          clearPosition: true,
+        );
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (!mounted || attempt != _locationAttempt) return;
+      if (permission == LocationPermission.denied && requestPermission) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (!mounted || attempt != _locationAttempt) return;
+      if (permission == LocationPermission.deniedForever) {
+        _setLocationStatus(
+          '위치 권한이 차단됐습니다. 기기 설정에서 이 앱의 위치 권한을 허용해 주세요.',
+          clearPosition: true,
+        );
+        return;
+      }
+      if (permission == LocationPermission.denied) {
+        _setLocationStatus(
+          '위치 권한이 없어 체험 모드로 진행합니다. 권한을 허용한 뒤 새로고침을 눌러 주세요.',
+          clearPosition: true,
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      if (!mounted || attempt != _locationAttempt) return;
+      _updatePosition(position);
+
+      _positionSubscription =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 5,
+            ),
+          ).listen(
+            (nextPosition) {
+              if (attempt == _locationAttempt) {
+                _updatePosition(nextPosition);
+              }
+            },
+            onError: (Object error) {
+              if (attempt == _locationAttempt) {
+                _handleLocationError(
+                  error,
+                  fallbackMessage: 'GPS 위치 업데이트가 중단됐습니다. 잠시 후 새로고침을 눌러 주세요.',
+                );
+              }
+            },
+            onDone: () {
+              if (attempt != _locationAttempt) return;
+              _positionSubscription = null;
+              _setLocationStatus(
+                'GPS 위치 업데이트 연결이 종료됐습니다. 새로고침을 눌러 다시 연결해 주세요.',
+                clearPosition: true,
+              );
+            },
+          );
+    } on TimeoutException catch (error) {
+      if (attempt == _locationAttempt) {
+        _handleLocationError(error);
+      }
+    } on LocationServiceDisabledException catch (error) {
+      if (attempt == _locationAttempt) {
+        _handleLocationError(error);
+      }
+    } on PermissionDeniedException catch (error) {
+      if (attempt == _locationAttempt) {
+        _handleLocationError(error);
+      }
+    } catch (error) {
+      if (attempt == _locationAttempt) {
+        _handleLocationError(
+          error,
+          fallbackMessage: 'GPS에서 위치를 가져오지 못했습니다. 신호 상태를 확인한 뒤 새로고침을 눌러 주세요.',
+        );
+      }
+    }
+  }
+
+  Future<void> _stopPositionTracking() async {
+    final subscription = _positionSubscription;
+    _positionSubscription = null;
+    await subscription?.cancel();
+  }
+
+  void _handleLocationError(Object error, {String? fallbackMessage}) {
+    final message = switch (error) {
+      TimeoutException() =>
+        'GPS 응답이 지연되고 있습니다. 하늘이 보이는 곳으로 이동한 뒤 새로고침을 눌러 주세요.',
+      LocationServiceDisabledException() =>
+        '위치 서비스가 중단됐습니다. 기기 설정에서 GPS를 켜면 자동으로 다시 연결합니다.',
+      PermissionDeniedException() =>
+        '위치 권한이 거부되었습니다. 기기 설정에서 이 앱의 위치 권한을 확인해 주세요.',
+      _ => fallbackMessage ?? '위치를 확인하는 중 오류가 발생했습니다. 새로고침을 눌러 다시 시도해 주세요.',
+    };
+    _setLocationStatus(message, clearPosition: true);
+  }
+
+  void _setLocationStatus(
+    String status, {
+    bool isLoading = false,
+    bool clearPosition = false,
+  }) {
     if (!mounted) return;
     setState(() {
-      _isLoadingLocation = false;
+      _isLoadingLocation = isLoading;
       _locationStatus = status;
+      if (clearPosition) {
+        _currentPosition = null;
+      }
     });
   }
 
@@ -241,6 +409,16 @@ class _ExplorationScreenState extends State<ExplorationScreen> {
               style: const TextStyle(height: 1.4),
             ),
           ),
+          if (!_isLoadingLocation && _currentPosition == null)
+            IconButton(
+              tooltip: '위치 다시 확인',
+              color: Colors.greenAccent,
+              onPressed: () {
+                _listenForLocationServiceChanges();
+                unawaited(_startLocationTracking());
+              },
+              icon: const Icon(Icons.refresh),
+            ),
         ],
       ),
     );

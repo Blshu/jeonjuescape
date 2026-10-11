@@ -16,6 +16,16 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: ArboretumMainScreen()));
 
     expect(find.text('수목원 탐색 시작 · AR 단서 찾기'), findsOneWidget);
+    expect(find.text('지도 보기'), findsOneWidget);
+  });
+
+  test('스테이지가 요청한 동선 순서로 배치된다', () {
+    expect(
+      stages.map((stage) => stage.location),
+      orderedEquals(['삼나무 숲', '홍매화 동산', '유리온실 (AR 관찰)', '칠엽수 숲길', '낙우송 연못']),
+    );
+    expect(stages.where((stage) => stage.showsPlantCore).single.id, 5);
+    expect(nextLocationClueFor(stages.last), isNull);
   });
 
   test('모든 스테이지의 AR 모델 설정이 유효하다', () {

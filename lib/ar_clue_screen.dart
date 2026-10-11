@@ -542,10 +542,12 @@ class _ArClueScreenState extends State<ArClueScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final stageNumber =
+        stages.indexWhere((candidate) => candidate.id == widget.stage.id) + 1;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('AR 단서 탐색 · 구역 ${widget.stage.id}'),
+        title: Text('AR 단서 탐색 · 구역 $stageNumber'),
         backgroundColor: Colors.black87,
       ),
       body: _buildBody(),

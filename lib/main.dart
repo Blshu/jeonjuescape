@@ -24,6 +24,8 @@ class ArboretumMainScreen extends StatefulWidget {
 }
 
 class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
+  static const String _mapAssetPath = 'assets/images/arboretum_map.png';
+
   // 5자리 비밀번호 정답: 7 1 1 3 5
   final List<String> targetPin = ["7", "1", "1", "3", "5"];
   // 플레이어가 해금한 숫자 저장 리스트
@@ -56,6 +58,92 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
         ),
       ),
     ).then((_) => setState(() {}));
+  }
+
+  void _showMap() {
+    final screenSize = MediaQuery.sizeOf(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.grey[900],
+        insetPadding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: screenSize.width,
+          height: screenSize.height * 0.78,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.map, color: Colors.greenAccent),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        '수목원 지도',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '닫기',
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: InteractiveViewer(
+                  minScale: 0.8,
+                  maxScale: 5,
+                  child: Center(
+                    child: Image.asset(
+                      _mapAssetPath,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 56,
+                              color: Colors.white54,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '지도 사진을 찾을 수 없습니다.',
+                              style: TextStyle(fontSize: 17),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _mapAssetPath,
+                              style: const TextStyle(color: Colors.greenAccent),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '위 경로에 지도 사진을 넣고 앱을 다시 빌드해 주세요.',
+                              style: TextStyle(color: Colors.white70),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showEndingDialog() {
@@ -220,6 +308,23 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
             ),
           ),
 
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: _showMap,
+                icon: Icon(Icons.map_outlined),
+                label: Text("지도 보기"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.greenAccent,
+                  side: BorderSide(color: Colors.greenAccent),
+                ),
+              ),
+            ),
+          ),
+
           // 수목원 탐색 구역 리스트
           Expanded(
             child: ListView.builder(
@@ -227,7 +332,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
               itemCount: stages.length,
               itemBuilder: (context, index) {
                 final stage = stages[index];
-                final isCleared = unlockedDigits[index] != null;
+                final isCleared = unlockedDigits[stage.id - 1] != null;
                 final isDiscovered = discoveredStageIds.contains(stage.id);
 
                 return Card(
@@ -255,7 +360,7 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                       child: isCleared
                           ? Icon(Icons.check, color: Colors.white)
                           : Text(
-                              "${stage.id}",
+                              "${index + 1}",
                               style: TextStyle(color: Colors.white),
                             ),
                     ),
@@ -286,7 +391,8 @@ class _ArboretumMainScreenState extends State<ArboretumMainScreen> {
                           builder: (_) => QuizScreen(
                             stage: stage,
                             arActivated: true,
-                            onSolved: (digit) => _onStageCleared(index, digit),
+                            onSolved: (digit) =>
+                                _onStageCleared(stage.id - 1, digit),
                           ),
                         ),
                       );

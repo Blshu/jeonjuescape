@@ -22,6 +22,7 @@ class StageInfo {
   final String arModelAsset;
   final double arModelScale;
   final ArCluePlacementMode arPlacementMode;
+  final bool showsPlantCore;
 
   StageInfo({
     required this.id,
@@ -39,11 +40,12 @@ class StageInfo {
     this.arModelAsset = 'assets/models/clue.glb',
     this.arModelScale = 0.2,
     this.arPlacementMode = ArCluePlacementMode.randomNearby,
+    this.showsPlantCore = false,
   }) : assert(arModelAsset.endsWith('.glb'), 'AR 모델은 GLB 파일이어야 합니다.'),
        assert(arModelScale > 0, 'AR 모델 배율은 0보다 커야 합니다.');
 }
 
-final List<StageInfo> stages = [
+final List<StageInfo> _stageCatalog = [
   // 1번 스테이지: 칠엽수
   StageInfo(
     id: 1,
@@ -120,5 +122,30 @@ final List<StageInfo> stages = [
     latitude: 35.85135,
     longitude: 127.08925,
     nextLocationClue: null,
+    showsPlantCore: true,
   ),
 ];
+
+// 실제 이동과 자동 진행 순서입니다. id는 기존 5자리 암호의 자릿수를 유지합니다.
+final List<StageInfo> stages = [
+  _stageCatalog[1], // 삼나무 숲
+  _stageCatalog[2], // 홍매화
+  _stageCatalog[4], // 유리온실 식물 코어
+  _stageCatalog[0], // 칠엽수
+  _stageCatalog[3], // 낙우송
+];
+
+String? nextLocationClueFor(StageInfo stage) {
+  final currentIndex = stages.indexWhere(
+    (candidate) => candidate.id == stage.id,
+  );
+  if (currentIndex < 0 || currentIndex == stages.length - 1) return null;
+
+  return switch (stage.id) {
+    2 => '붉은 꽃잎이 봄바람에 흔들리는 홍매화 동산으로 가세요.',
+    3 => '따뜻하고 투명한 유리온실로 가세요. 붉게 빛나는 식물 코어가 다음 단서를 숨기고 있습니다.',
+    5 => '유리온실을 나와 손바닥 모양의 잎이 펼쳐진 칠엽수 숲길로 가세요.',
+    1 => '연못가에서 물을 향해 솟아오른 낙우송의 숨뿌리를 찾으세요.',
+    _ => '다음 장소는 ${stages[currentIndex + 1].location}입니다.',
+  };
+}
